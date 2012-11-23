@@ -35,6 +35,7 @@
 #include "HttpServerSession.h"
 #include "HttpSM.h"
 #include "HttpDebugNames.h"
+#include "RemapProcessor.h"
 
 #define FIRST_LEVEL_HASH(x)   ats_ip_hash(x) % HSM_LEVEL1_BUCKETS
 #define SECOND_LEVEL_HASH(x)  ats_ip_hash(x) % HSM_LEVEL2_BUCKETS
@@ -269,7 +270,7 @@ HttpSessionManager::acquire_session(Continuation *cont, sockaddr const* ip,
   if (!hash_computed)
     ink_code_MMH((unsigned char *) hostname, strlen(hostname), (unsigned char *) &hostname_hash);
 
-  if (2 == sm->t_state.txn_conf->share_server_sessions) {
+  if (2 == sm->t_state.txn_conf->share_server_sessions && !remapProcessor.using_separate_thread()) {
     ink_assert(ethread->l1_hash);
     return _acquire_session(ethread->l1_hash + l1_index, ip, hostname_hash, sm);
   } else {
@@ -295,7 +296,7 @@ HttpSessionManager::release_session(HttpServerSession *to_release)
 
   ink_assert(l1_index < HSM_LEVEL1_BUCKETS);
 
-  if (2 == to_release->share_session) {
+  if (2 == to_release->share_session && !remapProcessor.using_separate_thread()) {
     bucket = ethread->l1_hash + l1_index;
   } else {
     bucket = g_l1_hash + l1_index;

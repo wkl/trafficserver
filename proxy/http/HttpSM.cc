@@ -1611,7 +1611,8 @@ HttpSM::state_http_server_open(int event, void *data)
 
   switch (event) {
   case NET_EVENT_OPEN:
-    session = (2 == t_state.txn_conf->share_server_sessions) ? 
+    session = (2 == t_state.txn_conf->share_server_sessions && 
+      !remapProcessor.using_separate_thread()) ? 
       THREAD_ALLOC_INIT(httpServerSessionAllocator, mutex->thread_holding) :
       httpServerSessionAllocator.alloc();
     session->share_session = t_state.txn_conf->share_server_sessions;
